@@ -14,13 +14,20 @@ const swaggerOptions = {
     openapi: '3.0.0',
     info: {
       title: 'Google Sheets API',
-      version: '1.0.0',
-      description: 'Backend para escribir en celdas específicas de Google Sheets',
+      version: '1.0.0'
     },
     paths: {
+      '/ping': {
+        get: {
+          summary: 'Ruta para mantener el servidor despierto',
+          responses: {
+            200: { description: 'Servidor activo' }
+          }
+        }
+      },
       '/escribir-celda': {
         post: {
-          summary: 'Escribe un texto en una celda específica (ej. A1)',
+          summary: 'Escribe un texto en una celda',
           requestBody: {
             required: true,
             content: {
@@ -28,31 +35,23 @@ const swaggerOptions = {
                 schema: {
                   type: 'object',
                   properties: {
-                    celda: { 
-                      type: 'string', 
-                      example: 'A1',
-                      description: 'Coordenada de la celda' 
-                    },
-                    texto: { 
-                      type: 'string', 
-                      example: 'Hola desde Node.js',
-                      description: 'Texto a insertar' 
-                    }
+                    celda: { type: 'string', example: 'A1' },
+                    texto: { type: 'string', example: '150' }
                   }
                 }
               }
             }
           },
           responses: {
-            200: { description: 'Celda actualizada con éxito' },
-            400: { description: 'Faltan datos en la petición' },
-            500: { description: 'Error en el servidor' }
+            200: { description: 'OK' },
+            400: { description: 'Bad Request' },
+            500: { description: 'Error' }
           }
         }
       }
     }
   },
-  apis: [], 
+  apis: [],
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
@@ -65,13 +64,17 @@ const auth = new google.auth.GoogleAuth({
 
 const spreadsheetId = process.env.SPREADSHEET_ID;
 
+app.get('/ping', (req, res) => {
+  res.status(200).send('Servidor activo');
+});
+
 app.post('/escribir-celda', async (req, res) => {
   const { celda, texto } = req.body;
 
   if (!celda || texto === undefined) {
     return res.status(400).send({ 
       success: false, 
-      error: 'Debes enviar la "celda" (ej. "A1") y el "texto".' 
+      error: 'Debes enviar celda y texto' 
     });
   }
 
@@ -88,18 +91,14 @@ app.post('/escribir-celda', async (req, res) => {
       },
     });
 
-    res.status(200).send({ 
-      success: true, 
-      message: `Dato guardado correctamente en la celda ${celda}` 
-    });
+    res.status(200).send({ success: true });
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error(error.message);
     res.status(500).send({ success: false, error: error.message });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`\n🚀 Servidor funcionando`);
-  console.log(`📝 Documentación: http://localhost:${PORT}/api-docs\n`);
+  console.log(`Servidor en puerto ${PORT}`);
 });
